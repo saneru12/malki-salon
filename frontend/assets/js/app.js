@@ -1,4 +1,4 @@
-const API_ORIGIN = "http://malki-salon-production.up.railway.app";
+const API_ORIGIN = "https://malki-salon-production.up.railway.app";
 const API_BASE = `${API_ORIGIN}/api`;
 
 function imgUrl(path){
