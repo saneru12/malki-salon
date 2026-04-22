@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Contact - Malki Salon</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="index.html"><span class="brand-dot"></span>Malki Salon</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="services.html">Services</a>
+        <a href="packages.html">Packages</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="shop.html">Online Shop</a>
+                <a class="nav-offers" href="offers.html">Special Offers</a>
+<a href="booking.html">Book</a>
+        <a href="about.html">About</a>
+
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </div>
+</header>
+<div class="container">
+
+<div class="section-head">
+  <div>
+    <h2>Contact Us</h2>
+    <p>We’re here to help — visit, call, or message</p>
+  </div>
+</div>
+
+<div class="contact-cards">
+  <div class="info-card">
+    <h3 id="contactSiteName" style="margin:0 0 8px">Malki Salon</h3>
+    <div class="muted" id="contactAddress">—</div>
+    <div style="margin-top:10px"><b>Phone:</b> <span id="contactPhone">—</span></div>
+    <div><b>Email:</b> <span id="contactEmail">—</span></div>
+    <div><b>Open:</b> <span id="contactHours">—</span></div>
+  </div>
+
+  <form id="contactForm">
+    <h3 style="margin:0 0 8px">Send a message</h3>
+    <div class="muted" id="contactFormHint">Login required to send a message.</div>
+
+    <div id="contactMessagingDisabled" class="status error" style="display:none; margin-top:10px;">Messaging is currently disabled by admin.</div>
+
+    <label>Name</label>
+    <input name="name" id="contactName" disabled />
+
+    <label>Email</label>
+    <input name="email" id="contactEmailInput" type="email" disabled />
+
+    <label>Message</label>
+    <textarea name="message" required></textarea>
+
+    <div style="margin-top:14px;">
+      <button class="btn" type="submit">Send</button>
+    </div>
+    <div id="contactStatus" class="status" style="display:none;"></div>
+  </form>
+</div>
+
+<div style="margin-top:14px">
+  <iframe class="map"
+    id="contactMap"
+    src="https://www.google.com/maps?q=Colombo%20Sri%20Lanka&output=embed"
+    loading="lazy"></iframe>
+</div>
+
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="brand" style="margin-bottom:10px"><span class="brand-dot"></span>Malki Salon</div>
+        <div class="muted" style="color:#ddd">
+          Premium salon services, bridal packages, and beauty care — book appointments online.
+        </div>
+        <div style="margin-top:10px">
+          <a href="booking.html">Book Appointment</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Quick Links</h4>
+        <div><a href="services.html">Services</a></div>
+        <div><a href="packages.html">Packages</a></div>
+        <div><a href="gallery.html">Gallery</a></div>
+        <div><a href="contact.html">Contact</a></div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Contact</h4>
+        <div><b>Phone:</b> +94 XX XXX XXXX</div>
+        <div><b>Email:</b> info@malkisalon.lk</div>
+        <div><b>Hours:</b> 9.00 AM – 7.00 PM</div>
+        <small>Update these details in contact.html</small>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <small>© <span id="year"></span> Malki Salon. All rights reserved.</small>
+    </div>
+  </div>
+</footer>
+<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+<script src="assets/js/offers.js"></script>
+<script src="assets/js/offers-indicator.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/customer-auth.js"></script>
+
+<script>
+  (async function(){
+    const f = document.getElementById("contactForm");
+    const s = document.getElementById("contactStatus");
+    const hint = document.getElementById("contactFormHint");
+    const disabledBox = document.getElementById("contactMessagingDisabled");
+
+    const elSiteName = document.getElementById("contactSiteName");
+    const elAddr = document.getElementById("contactAddress");
+    const elPhone = document.getElementById("contactPhone");
+    const elEmail = document.getElementById("contactEmail");
+    const elHours = document.getElementById("contactHours");
+    const map = document.getElementById("contactMap");
+
+    const nameInput = document.getElementById("contactName");
+    const emailInput = document.getElementById("contactEmailInput");
+
+    function setStatus(text, kind){
+      s.style.display = text ? "block" : "none";
+      s.textContent = text || "";
+      s.className = "status " + (kind || "");
+    }
+
+    // Load settings (contact details + enable/disable messaging)
+    try{
+      const res = await fetch(`${API_BASE}/settings`);
+      const st = await res.json().catch(()=> ({}));
+      if (res.ok) {
+        elSiteName.textContent = st.siteName || "Malki Salon";
+        elAddr.textContent = st.address || "";
+        elPhone.textContent = st.phone || "";
+        elEmail.textContent = st.email || "";
+
+        const open = st.openTime || "";
+        const close = st.closeTime || "";
+        elHours.textContent = (open && close) ? `${open} - ${close}` : "";
+
+        if (st.googleMapsEmbedUrl) {
+          map.src = st.googleMapsEmbedUrl;
+        }
+
+        if (st.contactMessagingEnabled === false) {
+          disabledBox.style.display = "block";
+          // hide form inputs
+          f.querySelectorAll("input, textarea, button").forEach(x => x.disabled = true);
+        }
+      }
+    } catch {}
+
+    // Prefill customer info if available
+    try{
+      const c = typeof getCustomer === "function" ? getCustomer() : null;
+      if (c) {
+        nameInput.value = c.name || "";
+        emailInput.value = c.email || "";
+        hint.textContent = "Send a message to admin. You can see replies in My Account.";
+      } else {
+        hint.textContent = "Login required to send a message.";
+      }
+    } catch {}
+
+    f.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setStatus("", "");
+
+      // Customer must be logged in to send a message
+      try {
+        if (typeof getCustomerToken === "function" && !getCustomerToken()) {
+          setStatus("⚠️ Message send කරන්න login වෙන්න ඕනේ.", "error");
+          if (typeof requireCustomer === "function") requireCustomer();
+          return;
+        }
+      } catch {}
+
+      const msg = String(f.message.value || "").trim();
+      if (!msg) {
+        setStatus("Message is required", "error");
+        return;
+      }
+
+      setStatus("Sending...", "");
+      try {
+        const res = await fetch(`${API_BASE}/messages/me`, {
+          method: "POST",
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ message: msg })
+        });
+        const data = await res.json().catch(()=> ({}));
+        if (!res.ok) {
+          setStatus(data.message || "Error", "error");
+          return;
+        }
+
+        setStatus("✅ Message sent! (Check My Account for replies)", "success");
+        f.message.value = "";
+      } catch (err) {
+        setStatus("Server not reachable. Check backend is running.", "error");
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>

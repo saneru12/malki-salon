@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Malki Salon • Admin</title>
+    <link rel="stylesheet" href="../assets/css/style.css" />
+    <link rel="stylesheet" href="./admin.css" />
+  </head>
+  <body>
+    <div class="admin-shell" id="app">
+      <aside class="admin-aside">
+        <div class="admin-brand">
+          <div class="logo">MS</div>
+          <div>
+            <div class="brand-title">Malki Salon</div>
+            <div class="brand-sub">Admin Panel</div>
+          </div>
+        </div>
+
+        <nav class="admin-nav" id="nav">
+          <button class="nav-btn" data-view="dashboard">Dashboard</button>
+          <button class="nav-btn" data-view="appointments">Appointments</button>
+          <button class="nav-btn" data-view="services">Services</button>
+          <button class="nav-btn" data-view="packages">Packages</button>
+          <button class="nav-btn" data-view="gallery">Gallery</button>
+          <button class="nav-btn" data-view="shopProducts">Shop Products</button>
+          <button class="nav-btn" data-view="shopOrders">Shop Orders</button>
+          <button class="nav-btn" data-view="messages">Messages</button>
+          <button class="nav-btn" data-view="staff">Staff</button>
+          <button class="nav-btn" data-view="settings">Settings</button>
+        </nav>
+
+        <div class="admin-aside-footer">
+          <div class="muted" id="whoami">Not signed in</div>
+          <button class="btn secondary" id="logoutBtn" type="button">Logout</button>
+        </div>
+      </aside>
+
+      <main class="admin-main">
+        <!-- Top bar -->
+        <div class="admin-topbar">
+          <div class="admin-topbar-left">
+            <h1 id="viewTitle" style="margin:0">Dashboard</h1>
+            <div class="muted" id="viewHint"></div>
+          </div>
+          <div class="admin-topbar-right">
+            <a class="btn secondary" href="../index.html" target="_blank" rel="noreferrer">Open website</a>
+          </div>
+        </div>
+
+        <!-- Login overlay -->
+        <div class="admin-login" id="loginBox">
+          <div class="card" style="max-width:460px; width:100%">
+            <div class="card-body">
+              <h2 style="margin:0 0 6px">Sign in</h2>
+              <div class="muted" style="margin-bottom:12px">Use an admin or staff manager account. Admin credentials come from <code>backend/.env</code>; extra staff manager logins can be created from the Staff section.</div>
+              <form id="loginForm" class="grid" style="gap:10px">
+                <div>
+                  <label>Email</label>
+                  <input class="input" name="email" type="email" placeholder="admin@malkisalon.local" required />
+                </div>
+                <div>
+                  <label>Password</label>
+                  <input class="input" name="password" type="password" placeholder="••••••••" required />
+                </div>
+                <button class="btn" type="submit">Login</button>
+                <div class="status" id="loginStatus" style="display:none"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <section class="admin-content" id="content"></section>
+      </main>
+    </div>
+
+    <script src="../assets/js/app.js"></script>
+    <script src="./staff-module.js"></script>
+    <script src="./admin.js"></script>
+  </body>
+</html>

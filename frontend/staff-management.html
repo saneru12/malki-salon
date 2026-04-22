@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Malki Salon • Staff Management</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="stylesheet" href="admin/admin.css" />
+  </head>
+  <body>
+    <div class="admin-shell" id="app">
+      <aside class="admin-aside">
+        <div class="admin-brand">
+          <div class="logo">MS</div>
+          <div>
+            <div class="brand-title">Malki Salon</div>
+            <div class="brand-sub">Staff Management Portal</div>
+          </div>
+        </div>
+
+        <nav class="admin-nav" id="nav">
+          <button class="nav-btn active" data-view="staff">Staff Management</button>
+        </nav>
+
+        <div class="admin-aside-footer">
+          <div class="muted" id="whoami">Not signed in</div>
+          <button class="btn secondary" id="logoutBtn" type="button">Logout</button>
+        </div>
+      </aside>
+
+      <main class="admin-main">
+        <div class="admin-topbar">
+          <div class="admin-topbar-left">
+            <h1 id="viewTitle" style="margin:0">Staff Management</h1>
+            <div class="muted" id="viewHint">Profiles, service assignment, attendance, work logs, and payroll</div>
+          </div>
+          <div class="admin-topbar-right">
+            <a class="btn secondary" href="index.html" target="_blank" rel="noreferrer">Open website</a>
+            <a class="btn secondary" href="admin/index.html" target="_blank" rel="noreferrer">Open admin panel</a>
+          </div>
+        </div>
+
+        <div class="admin-login" id="loginBox">
+          <div class="card" style="max-width:460px; width:100%">
+            <div class="card-body">
+              <h2 style="margin:0 0 6px">Staff portal sign in</h2>
+              <div class="muted" style="margin-bottom:12px">
+                Use the separate Staff Manager login created by the admin, or sign in with the main admin account.
+              </div>
+              <form id="loginForm" class="grid" style="gap:10px">
+                <div>
+                  <label>Email</label>
+                  <input class="input" name="email" type="email" placeholder="manager@malkisalon.local" required />
+                </div>
+                <div>
+                  <label>Password</label>
+                  <input class="input" name="password" type="password" placeholder="••••••••" required />
+                </div>
+                <button class="btn" type="submit">Login</button>
+                <div class="status" id="loginStatus" style="display:none"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <section class="admin-content" id="content"></section>
+      </main>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+    <script src="admin/staff-module.js"></script>
+    <script src="admin/staff-portal.js"></script>
+  </body>
+</html>

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Malki Salon</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="index.html"><span class="brand-dot"></span>Malki Salon</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="services.html">Services</a>
+        <a href="packages.html">Packages</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="shop.html">Online Shop</a>
+                <a class="nav-offers" href="offers.html">Special Offers</a>
+<a href="booking.html">Book</a>
+        <a href="about.html">About</a>
+
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </div>
+</header>
+<div class="container">
+
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="badge">Online Booking • Packages • Gallery</div>
+      <h1>Glow up with confidence.</h1>
+      <p>Explore services, view our latest work, and book your appointment in seconds.</p>
+      <a class="btn" href="booking.html">Book Appointment</a>
+      <a class="btn secondary" href="services.html" style="margin-left:10px">View Services</a>
+    </div>
+    <div>
+      <img src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?fm=jpg&ixlib=rb-4.1.0&q=80&w=1200" alt="Malki Salon">
+    </div>
+  </div>
+</section>
+
+<div class="offers-banner" id="offersBanner">
+  <div class="left">
+    <span class="offers-dot" aria-hidden="true"></span>
+    <div>
+      <strong>Special Offers Available</strong>
+      <div><span><span data-offers-count>0</span> offer(s) live right now — tap to view.</span></div>
+    </div>
+  </div>
+  <a class="btn secondary" href="offers.html">View Offers</a>
+</div>
+
+
+
+<div class="section-head">
+  <div>
+    <h2>Featured Services</h2>
+    <p>Loaded from MongoDB (with images)</p>
+  </div>
+  <a class="btn secondary" href="services.html">See All</a>
+</div>
+<div id="serviceGrid" class="grid"></div>
+
+<div class="section-head">
+  <div>
+    <h2>Best Packages</h2>
+    <p>Special offers & bridal packages</p>
+  </div>
+  <a class="btn secondary" href="packages.html">See All</a>
+</div>
+<div id="packageGrid" class="grid"></div>
+
+<div class="section-head">
+  <div>
+    <h2>Latest Gallery</h2>
+    <p>Our recent work & styles</p>
+  </div>
+  <a class="btn secondary" href="gallery.html">Open Gallery</a>
+</div>
+<div id="galleryGrid" class="grid"></div>
+
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="brand" style="margin-bottom:10px"><span class="brand-dot"></span>Malki Salon</div>
+        <div class="muted" style="color:#ddd">
+          Premium salon services, bridal packages, and beauty care — book appointments online.
+        </div>
+        <div style="margin-top:10px">
+          <a href="booking.html">Book Appointment</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Quick Links</h4>
+        <div><a href="services.html">Services</a></div>
+        <div><a href="packages.html">Packages</a></div>
+        <div><a href="gallery.html">Gallery</a></div>
+        <div><a href="contact.html">Contact</a></div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Contact</h4>
+        <div><b>Phone:</b> +94 XX XXX XXXX</div>
+        <div><b>Email:</b> info@malkisalon.lk</div>
+        <div><b>Hours:</b> 9.00 AM – 7.00 PM</div>
+        <small>Update these details in contact.html</small>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <small>© <span id="year"></span> Malki Salon. All rights reserved.</small>
+    </div>
+  </div>
+</footer>
+<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+<script src="assets/js/offers.js"></script>
+<script src="assets/js/offers-indicator.js"></script>
+<script src="assets/js/app.js"></script>
+
+<script>
+  loadServicesToPage("serviceGrid", null, 6);
+  loadPackages("packageGrid", 6);
+  loadGallery("galleryGrid", 6);
+</script>
+
+</body>
+</html>

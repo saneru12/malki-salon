@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Special Offers - Malki Salon</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="index.html"><span class="brand-dot"></span>Malki Salon</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="services.html">Services</a>
+        <a href="packages.html">Packages</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="shop.html">Online Shop</a>
+        <a class="nav-offers" href="offers.html">Special Offers</a>
+        <a href="booking.html">Book</a>
+        <a href="about.html">About</a>
+
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div class="hero-inner">
+      <div>
+        <h1>Special Offers</h1>
+        <p>Save more on selected services & packages. Offers are updated frequently—grab yours before it ends.</p>
+        <div class="chips" style="margin-top:10px">
+          <span class="chip ok">✅ Verified Offers</span>
+          <span class="chip warn">⏳ Limited Time</span>
+          <span class="chip">✨ Updated</span>
+        </div>
+      </div>
+      <img src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?fm=jpg&ixlib=rb-4.1.0&q=80&w=1200" alt="Malki Salon" onerror="this.style.display='none'">
+    </div>
+  </section>
+
+  <div class="section-head">
+    <h2>Available Offers</h2>
+    <p class="muted">Tap an offer and book instantly.</p>
+  </div>
+
+  <div id="offersList" class="offers-grid"></div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h3 style="margin:0 0 8px">Malki Salon</h3>
+        <p style="margin:0;opacity:.85">Beauty, care, and confidence—crafted for you.</p>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Quick Links</h4>
+        <div style="display:grid;gap:6px">
+          <a href="services.html">Services</a>
+          <a href="packages.html">Packages</a>
+          <a href="offers.html">Special Offers</a>
+          <a href="shop.html">Online Shop</a>
+          <a href="booking.html">Book</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Contact</h4>
+        <small>For bookings & inquiries, contact us via phone or WhatsApp.</small>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <small>© <span id="year"></span> Malki Salon. All rights reserved.</small>
+    </div>
+  </div>
+</footer>
+
+<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+<script src="assets/js/offers.js"></script>
+<script src="assets/js/offers-indicator.js"></script>
+<script src="assets/js/offers-page.js"></script>
+</body>
+</html>

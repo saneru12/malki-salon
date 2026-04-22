@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Online Shop - Malki Salon</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="index.html"><span class="brand-dot"></span>Malki Salon</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="services.html">Services</a>
+        <a href="packages.html">Packages</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="shop.html" class="active">Online Shop</a>
+        <a href="booking.html">Book</a>
+        <a href="about.html">About</a>
+
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <section class="section">
+    <h1 style="margin: 0 0 6px">Online Shop</h1>
+    <p class="muted" style="margin:0 0 14px">
+      Salon උපකරණ සහ hair care products online order කරන්න. Order එක place කළාට පස්සේ salon එක approve කරයි,
+      courier service එකට parcel එක දීලා tracking number එක add කරයි, ඒ details customer ට <b>My Account</b> page එකෙන් බලන්න පුළුවන්.
+      Delivery එක ලැබුණාද නැද්ද කියලා customer ට එතැනින්ම confirm කරන්නත් පුළුවන්.
+    </p>
+
+    <div class="card" style="padding:14px; margin-bottom:14px;">
+      <div class="badge">Delivery Flow</div>
+      <div class="muted" style="margin-top:8px;">1) Place order → 2) Salon approves → 3) Courier + tracking number added → 4) Customer tracks parcel → 5) Customer confirms item received / not received.</div>
+    </div>
+
+    <section class="shop-review-focus" aria-labelledby="shopReviewHeading">
+      <div class="section-head" style="margin-top:0; margin-bottom:12px;">
+        <div>
+          <h2 id="shopReviewHeading" style="margin:0;">Customer Ratings</h2>
+          <p>Trustpilot-style verified review summary for every visitor.</p>
+        </div>
+      </div>
+      <div id="shopReviewHero"></div>
+      <div id="shopReviewList" class="shop-review-grid"></div>
+      <div style="margin-top:14px; text-align:center;">
+        <button class="btn secondary" id="shopReviewMoreBtn" type="button" hidden>Show more verified reviews</button>
+      </div>
+    </section>
+
+    <section class="shop-catalog-zone" aria-labelledby="shopCatalogHeading">
+      <div class="section-head" style="margin-top:0; margin-bottom:12px;">
+        <div>
+          <h2 id="shopCatalogHeading" style="margin:0;">Shop by Category</h2>
+          <p>Category select කරලා search, sort කරගෙන products බලන්න. Item ගොඩක් add වුණත් list එක scroll වෙලා smooth විදිහට browse කරන්න පුළුවන්.</p>
+        </div>
+      </div>
+
+      <div class="card shop-catalog-shell">
+        <aside class="shop-category-panel" aria-label="Product categories">
+          <div class="badge">Browse Categories</div>
+          <h3 style="margin:0 0 6px;">Collections</h3>
+          <div class="muted" style="margin-bottom:14px;">Hair care, styling, tools, beauty essentials වගේ category අනුව items organize වෙලා පෙන්වයි.</div>
+
+          <div class="shop-stat-grid">
+            <div class="shop-stat-card">
+              <strong id="shopCategoryCount">0</strong>
+              <span>Categories</span>
+            </div>
+            <div class="shop-stat-card">
+              <strong id="shopProductCount">0</strong>
+              <span>Total items</span>
+            </div>
+          </div>
+
+          <div id="categoryList" class="shop-category-list" aria-live="polite"></div>
+        </aside>
+
+        <div class="shop-products-panel">
+          <div class="shop-toolbar">
+            <div class="shop-toolbar-main">
+              <div class="shop-field shop-search-field">
+                <label for="shopSearchInput">Search items</label>
+                <input id="shopSearchInput" type="search" placeholder="Shampoo, serum, dryer, mask..." autocomplete="off" />
+              </div>
+              <div class="shop-field shop-sort-field">
+                <label for="shopSortSelect">Sort by</label>
+                <select id="shopSortSelect">
+                  <option value="featured">Featured</option>
+                  <option value="newest">Newest</option>
+                  <option value="name_asc">Name A-Z</option>
+                  <option value="price_low">Price: Low to High</option>
+                  <option value="price_high">Price: High to Low</option>
+                </select>
+              </div>
+            </div>
+            <div class="shop-toolbar-meta">
+              <div id="shopResultsMeta" class="muted">Loading products...</div>
+              <button class="btn secondary shop-clear-btn" id="shopClearFiltersBtn" type="button">Clear Filters</button>
+            </div>
+          </div>
+
+          <div class="shop-scroll-frame">
+            <div id="productGrid" class="shop-product-grid" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="card cart-wrap">
+      <div class="card-body">
+        <h2 style="margin:0 0 10px">Your Cart</h2>
+
+        <div style="overflow:auto">
+          <table class="cart-table">
+            <thead>
+              <tr>
+                <th style="min-width:240px">Item</th>
+                <th style="min-width:150px">Qty</th>
+                <th style="min-width:120px">Price</th>
+                <th style="min-width:120px">Subtotal</th>
+                <th style="min-width:90px"></th>
+              </tr>
+            </thead>
+            <tbody id="cartBody">
+              <tr><td colspan="5" class="muted">Cart එක හිස්යි. Product එකක් Add කරන්න.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="cart-total">
+          <div class="note">* Products & prices Admin Panel එකෙන් manage කරන්න පුළුවන්.</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-weight:900">Total: <span id="cartTotal">LKR 0</span></div>
+            <button class="btn" id="checkoutBtn" type="button">Place Order</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px; padding:14px;">
+          <div class="badge">Delivery Details</div>
+          <div class="muted" style="margin-top:8px">Delivery address එක හා note එක (optional) යොදන්න.</div>
+          <div style="margin-top:10px" class="grid" >
+            <div class="card" style="padding:12px;">
+              <label class="muted">Delivery Address</label>
+              <textarea id="deliveryAddress" rows="3" placeholder="House No, Street, City" style="width:100%;padding:10px;border-radius:12px;border:1px solid rgba(0,0,0,.1)"></textarea>
+            </div>
+            <div class="card" style="padding:12px;">
+              <label class="muted">Note (optional)</label>
+              <textarea id="orderNote" rows="3" placeholder="Any special request" style="width:100%;padding:10px;border-radius:12px;border:1px solid rgba(0,0,0,.1)"></textarea>
+            </div>
+          </div>
+          <div id="orderStatus" class="muted" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="brand" style="margin-bottom:10px"><span class="brand-dot"></span>Malki Salon</div>
+        <div class="muted" style="color:#ddd">
+          Premium salon services, bridal packages, and beauty care — book appointments online.
+        </div>
+        <div style="margin-top:10px">
+          <a href="booking.html">Book Appointment</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Quick Links</h4>
+        <div><a href="services.html">Services</a></div>
+        <div><a href="packages.html">Packages</a></div>
+        <div><a href="gallery.html">Gallery</a></div>
+        <div><a href="shop.html">Online Shop</a>        <a class="nav-offers" href="offers.html">Special Offers</a>
+</div>
+        <div><a href="contact.html">Contact</a></div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Contact</h4>
+        <div class="muted" style="color:#ddd">Sri Lanka</div>
+        <div style="margin-top:8px"><a href="contact.html">Get Directions</a></div>
+      </div>
+    </div>
+    <div class="muted" style="color:#bbb;margin-top:18px">© <span id="year"></span> Malki Salon. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/customer-auth.js"></script>
+<script src="assets/js/shop.js"></script>
+<script src="assets/js/shop-reviews.js"></script>
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+</script>
+<script src="assets/js/offers.js"></script>
+<script src="assets/js/offers-indicator.js"></script>
+</body>
+</html>

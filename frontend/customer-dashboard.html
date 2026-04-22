@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>My Account - Malki Salon</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="index.html"><span class="brand-dot"></span>Malki Salon</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="booking.html">Book</a>
+        <a href="customer-dashboard.html" style="text-decoration:underline">My Account</a>
+        <a href="#" id="logoutBtn">Logout</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main class="container" style="padding:18px 0 40px;">
+  <div class="hero" style="margin-top:18px;">
+    <div class="hero-inner" style="grid-template-columns: 1fr;">
+      <div>
+        <h1 style="font-size:34px;margin-bottom:6px;">My Account</h1>
+        <p class="muted" id="welcomeLine"></p>
+      </div>
+
+      <section class="card" style="padding:16px;">
+        <div class="badge">Profile</div>
+        <form id="profileForm" style="margin-top:10px;">
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px;">
+            <div>
+              <label class="muted">Name</label>
+              <input name="name" required />
+            </div>
+            <div>
+              <label class="muted">Phone</label>
+              <input name="phone" required />
+            </div>
+          </div>
+          <div style="margin-top:10px;">
+            <label class="muted">Email (cannot change)</label>
+            <input name="email" disabled />
+          </div>
+          <div style="margin-top:10px;">
+            <label class="muted">New Password (optional)</label>
+            <input name="password" type="password" minlength="6" placeholder="Leave blank to keep current password" />
+          </div>
+          <button class="btn" type="submit" style="margin-top:10px;">Save</button>
+          <span id="profileStatus" class="muted" style="margin-left:10px;"></span>
+        </form>
+      </section>
+
+      <section class="card" style="padding:16px;">
+        <div class="badge">My Bookings</div>
+        <div class="muted" style="margin-top:8px;">Review salon proposals, confirm the offered slot, request another option, upload the required 25% advance payment slip after approval, or cancel the booking.</div>
+        <div id="bookingsWrap" style="margin-top:12px; overflow:auto;"></div>
+      </section>
+
+      <section class="card" style="padding:16px;">
+        <div class="badge">My Orders</div>
+        <div class="muted" style="margin-top:8px;">Courier tracking, delivery updates, and item received / not received confirmation.</div>
+        <div id="ordersWrap" style="margin-top:12px; overflow:auto;"></div>
+      </section>
+
+      <section class="card" style="padding:16px;">
+        <div class="badge">Messages</div>
+        <div class="muted" style="margin-top:8px;">Send a message to admin and see replies here.</div>
+
+        <div id="messagesWrap" style="margin-top:12px; overflow:auto; max-height:320px; padding:10px; border-radius:16px; border:1px solid rgba(29,27,31,.12); background:#fff;"></div>
+
+        <form id="messageForm" style="margin-top:12px; display:flex; gap:10px; align-items:flex-end;">
+          <div style="flex:1;">
+            <label class="muted">New message</label>
+            <textarea class="input" name="message" rows="2" placeholder="Type your message..." required></textarea>
+          </div>
+          <button class="btn" type="submit">Send</button>
+        </form>
+        <div id="messageStatus" class="muted" style="margin-top:8px;"></div>
+      </section>
+
+      <div class="card" style="padding:14px;">
+        <a class="btn" href="booking.html">+ Make a new booking</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/customer-auth.js"></script>
+<script src="assets/js/order-review-ui.js"></script>
+<script src="assets/js/customer-dashboard.js"></script>
+</body>
+</html>

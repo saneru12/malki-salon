@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Booking - Malki Salon</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="index.html"><span class="brand-dot"></span>Malki Salon</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="services.html">Services</a>
+        <a href="packages.html">Packages</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="shop.html">Online Shop</a>
+        <a class="nav-offers" href="offers.html">Special Offers</a>
+        <a href="booking.html">Book</a>
+        <a href="customer-login.html">Customer</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="section-head">
+    <div>
+      <h2>Book an Appointment</h2>
+      <p>Choose your staff member first. Hair treatments use a manual review flow, while fixed-time services can be booked instantly.</p>
+    </div>
+  </div>
+
+  <div id="staffSection" class="card" style="padding:16px; margin:14px 0;">
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div>
+        <div class="badge">Step 1</div>
+        <h3 style="margin:0 0 4px;">Choose a stylist / staff member</h3>
+        <div class="muted">Click one person to continue with booking.</div>
+      </div>
+      <div id="selectedStaffPill" class="badge" style="display:none;"></div>
+    </div>
+    <div id="staffGrid" class="grid" style="margin-bottom:0;"></div>
+  </div>
+
+  <div id="changeStaffWrap" style="display:none; margin:0 0 10px;">
+    <button type="button" class="btn secondary" id="changeStaffBtn">← Change staff member</button>
+  </div>
+
+  <form id="bookingForm" style="display:none;">
+    <input type="hidden" name="staffId" id="staffId" />
+    <input type="hidden" name="staffName" id="staffName" />
+
+    <div class="badge">Step 2</div>
+    <h3 id="bookWithTitle" style="margin:0 0 6px;">Booking details</h3>
+    <div class="muted" id="bookWithSub" style="margin-bottom:8px;"></div>
+
+    <div id="customerAutofillNote" class="card" style="display:none; padding:10px; margin:10px 0; background:rgba(194,24,91,.06); border:1px solid rgba(194,24,91,.15);">
+      <div class="muted"><b>Logged in:</b> Your details are auto-filled. To change them, go to <a href="customer-dashboard.html">My Account</a>.</div>
+    </div>
+
+    <div class="booking-inline-grid">
+      <div>
+        <label>Customer Name</label>
+        <input name="customerName" required />
+      </div>
+      <div>
+        <label>Phone</label>
+        <input name="phone" required />
+      </div>
+    </div>
+
+    <label>Email</label>
+    <input name="email" type="email" />
+
+    <div class="booking-subsection">
+      <div class="badge">Step 3</div>
+      <h3 style="margin:0 0 4px;">Choose booking category</h3>
+      <div class="muted">The page changes automatically based on whether the service needs manual review or instant slot booking.</div>
+      <div id="bookingCategoryGrid" class="booking-flow-grid" style="margin-top:12px;"></div>
+    </div>
+
+    <label>Service</label>
+    <select id="serviceId" name="serviceId" required></select>
+    <div id="serviceMeta" class="helper-dark"></div>
+
+    <div id="manualSection" class="booking-subsection" style="display:none;">
+      <div class="badge">Manual review request</div>
+      <h3 style="margin:0 0 4px;">Hair consultation request</h3>
+      <div class="muted">For services like straightening, rebonding, relaxing, and keratin. Upload a few photos, choose only your preferred date, and send the request. The salon will review everything and send you an exact date/time proposal inside My Account.</div>
+
+      <div class="booking-inline-grid" style="margin-top:12px; grid-template-columns:1fr;">
+        <div>
+          <label>Preferred Date</label>
+          <input id="manualDateInput" name="manualDate" type="date" />
+        </div>
+      </div>
+
+      <label>Upload current hair photos</label>
+      <input id="manualPhotos" type="file" accept="image/*" multiple />
+      <div class="upload-hint">Upload 2 to 4 clear photos. Front, side, back, and current texture/damage view are best.</div>
+      <div id="manualUploadStatus" class="helper-dark"></div>
+      <div id="manualPhotoPreview" class="photo-preview-grid"></div>
+    </div>
+
+    <div id="instantSection" class="booking-subsection" style="display:none;">
+      <div class="badge">Instant slot booking</div>
+      <h3 id="instantTitle" style="margin:0 0 4px;">Choose date and time</h3>
+      <div id="instantSub" class="muted">Real-time availability is shown for the selected staff member and service.</div>
+
+      <label>Date</label>
+      <input id="dateInput" name="date" type="date" />
+
+      <div class="availability card booking-availability" style="margin:10px 0; padding:14px;">
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <div><b>Selected date status:</b> <span id="dayStatus" class="badge">—</span></div>
+          <div class="muted" id="countStatus"></div>
+        </div>
+        <div style="margin-top:10px;">
+          <div><b>Booked times:</b></div>
+          <div id="bookedTimes" class="chips booking-chip-wrap" style="margin-top:6px;"></div>
+        </div>
+        <div style="margin-top:12px;">
+          <div><b>Next available dates (next 14 days):</b></div>
+          <div id="availableDates" class="chips booking-chip-wrap" style="margin-top:6px;"></div>
+        </div>
+      </div>
+
+      <label>Time</label>
+      <select id="timeSlot" name="time"></select>
+      <div class="helper-dark" id="timeHelp"></div>
+    </div>
+
+    <label>Notes</label>
+    <textarea name="notes" placeholder="Add special notes, wedding location details, hair history, preferred style, or anything the salon should know..."></textarea>
+
+    <div style="margin-top:14px;">
+      <button class="btn" id="submitBtn" type="submit">Confirm Booking</button>
+    </div>
+
+    <div id="status" class="status" style="display:block;"></div>
+  </form>
+
+  <div class="section-head" style="margin-top:18px;">
+    <div>
+      <h2>Today’s Bookings (by staff)</h2>
+      <p>Only confirmed and active appointments are shown here. Pending consultation requests and unanswered proposals do not block the calendar until the customer accepts.</p>
+    </div>
+  </div>
+
+  <div id="todayBookingsGrid" class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px;"></div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="brand" style="margin-bottom:10px"><span class="brand-dot"></span>Malki Salon</div>
+        <div class="muted" style="color:#ddd">
+          Premium salon services, bridal packages, and beauty care — book appointments online.
+        </div>
+        <div style="margin-top:10px">
+          <a href="booking.html">Book Appointment</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Quick Links</h4>
+        <div><a href="services.html">Services</a></div>
+        <div><a href="packages.html">Packages</a></div>
+        <div><a href="gallery.html">Gallery</a></div>
+        <div><a href="contact.html">Contact</a></div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Contact</h4>
+        <div><b>Phone:</b> +94 XX XXX XXXX</div>
+        <div><b>Email:</b> info@malkisalon.lk</div>
+        <div><b>Hours:</b> 9.00 AM – 7.00 PM</div>
+        <small>Update these details in contact.html</small>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <small>© <span id="year"></span> Malki Salon. All rights reserved.</small>
+    </div>
+  </div>
+</footer>
+
+<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+<script src="assets/js/offers.js"></script>
+<script src="assets/js/offers-indicator.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/customer-auth.js"></script>
+<script src="assets/js/booking.js"></script>
+</body>
+</html>

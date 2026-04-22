@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Package Details - Malki Salon</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<header>
+  <div class="container">
+
+<div class="section-head">
+  <div>
+    <h2>Package Details</h2>
+    <p><a href="packages.html">Packages</a> / Details</p>
+  </div>
+</div>
+
+<div id="packageDetail"></div>
+
+</div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="brand" style="margin-bottom:10px"><span class="brand-dot"></span>Malki Salon</div>
+        <div class="muted" style="color:#ddd">
+          Premium salon services, bridal packages, and beauty care — book appointments online.
+        </div>
+        <div style="margin-top:10px">
+          <a href="booking.html">Book Appointment</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Quick Links</h4>
+        <div><a href="services.html">Services</a></div>
+        <div><a href="packages.html">Packages</a></div>
+        <div><a href="gallery.html">Gallery</a></div>
+                <div><a href="about.html">About</a></div>
+<div><a href="contact.html">Contact</a></div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px">Contact</h4>
+        <div><b>Phone:</b> +94 XX XXX XXXX</div>
+        <div><b>Email:</b> info@malkisalon.lk</div>
+        <div><b>Hours:</b> 9.00 AM – 7.00 PM</div>
+        <small>Update these details in contact.html</small>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <small>© <span id="year"></span> Malki Salon. All rights reserved.</small>
+    </div>
+  </div>
+</footer>
+<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+<script src="assets/js/offers.js"></script>
+<script src="assets/js/offers-indicator.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/package-details.js"></script>
+<script>loadServicesToPage('serviceGrid');</script>
+</body>
+</html>
