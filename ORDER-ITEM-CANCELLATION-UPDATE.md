@@ -6,7 +6,7 @@ What was added
   - multiple different item types in the same order
   - multiple quantities of the same item line
   - cancelling only some units while keeping the remaining units active
-- Customers can still cancel the full remaining order before courier handover.
+- Customers can cancel the full remaining order only until the salon approves it.
 - Cancelled item quantities are automatically returned to product stock.
 - Order totals are recalculated automatically:
   - original total
@@ -16,7 +16,7 @@ What was added
 
 Customer flow
 1. Customer places a shop order.
-2. In My Account > My Orders, before courier handover, the customer can:
+2. In My Account > My Orders, before the salon approves the order, the customer can:
    - enter cancel quantities per item line
    - cancel selected items together
    - cancel the full remaining order

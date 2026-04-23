@@ -718,7 +718,7 @@
   }
 
   function canCustomerCancelOrder(order) {
-    return ["pending", "confirmed"].includes(order?.status) && (order?.items || []).some((item) => itemRemainingQty(item) > 0);
+    return ["pending"].includes(order?.status) && (order?.items || []).some((item) => itemRemainingQty(item) > 0);
   }
 
   function canCustomerConfirmDelivery(order) {
@@ -904,7 +904,7 @@
     return `
       <div style="margin-top:12px; padding:12px; border-radius:14px; border:1px solid rgba(194,24,91,.16); background:rgba(194,24,91,.05);">
         <div style="font-weight:800;">Cancel selected items</div>
-        <div class="muted" style="margin-top:6px;">Choose a cancellation quantity for any order line below. You can cancel one unit from the same item, several units, different item types together, or the full remaining order before courier handover.</div>
+        <div class="muted" style="margin-top:6px;">Choose a cancellation quantity for any order line below. You can cancel one unit from the same item, several units, different item types together, or the full remaining order only until the salon approves this order.</div>
         <label class="muted" style="margin-top:10px; display:block;">Cancellation note (optional)</label>
         <textarea class="input" data-item-cancel-note="${escapeHtml(order._id)}" rows="3" placeholder="Example: Please remove two lipsticks from this order."></textarea>
         <div class="actions" style="margin-top:10px;">
@@ -1073,7 +1073,7 @@
     ordersWrap.querySelectorAll("button[data-ocancel]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-ocancel");
-        if (!confirm("Cancel all remaining items in this order before courier handover?")) return;
+        if (!confirm("Cancel all remaining items in this order before salon approval?")) return;
         btn.disabled = true;
         const res = await fetch(`${API_BASE}/orders/me/${id}/cancel`, {
           method: "PUT",

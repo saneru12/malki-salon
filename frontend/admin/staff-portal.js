@@ -10,6 +10,7 @@
   const viewHint = $("#viewHint");
 
   const TOK_KEY = "malki_staff_portal_token";
+  const AUTO_LOGOUT_MESSAGE = "For security, the staff portal signs out automatically after a browser refresh or secure session issue. Please sign in again.";
   let token = sessionStorage.getItem(TOK_KEY) || "";
   let currentUser = null;
 
@@ -41,19 +42,37 @@
     return v.toLocaleString("en-LK");
   }
 
-  function forceLogout() {
+  function forceLogout(message = "") {
     token = "";
     currentUser = null;
     sessionStorage.removeItem(TOK_KEY);
     setLoginVisible(true);
     whoami.textContent = "Not signed in";
+    content.innerHTML = "";
+    setStatus(loginStatus, message, message ? "warn" : "");
   }
+
+  try {
+    const nav = performance.getEntriesByType("navigation")[0];
+    if (nav && ["reload", "back_forward"].includes(nav.type) && token) {
+      forceLogout(AUTO_LOGOUT_MESSAGE);
+    }
+  } catch {}
+
+  window.addEventListener("pageshow", (e) => {
+    if (e.persisted && token) {
+      forceLogout(AUTO_LOGOUT_MESSAGE);
+    }
+  });
 
   async function api(path, opts = {}) {
     const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
     if (token) headers.Authorization = `Bearer ${token}`;
     const res = await fetch(`${API_BASE}${path}`, { ...opts, headers });
     const data = await res.json().catch(() => ({}));
+    if (!res.ok && (res.status === 401 || res.status === 403) && token) {
+      forceLogout(AUTO_LOGOUT_MESSAGE);
+    }
     if (!res.ok) {
       const msg = data.message || `Request failed: ${res.status}`;
       throw new Error(msg);
@@ -136,6 +155,7 @@
     try {
       await renderStaff();
     } catch (err) {
+      if (!token) return;
       content.innerHTML = `<div class="card"><div class="card-body"><div class="status error">${escapeHtml(err.message || "This section could not be loaded.")}</div></div></div>`;
       console.error("Staff portal render failed", err);
     }
@@ -157,7 +177,7 @@
       setLoginVisible(false);
       return true;
     } catch {
-      forceLogout();
+      if (token) forceLogout();
       return false;
     }
   }
