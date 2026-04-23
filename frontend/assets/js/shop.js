@@ -360,7 +360,7 @@ function renderCart() {
   if (!body) return;
 
   if (!entries.length) {
-    body.innerHTML = `<tr><td colspan="5" class="muted">Cart එක හිස්යි. Product එකක් Add කරන්න.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5" class="muted"></td></tr>`;
     document.getElementById("cartTotal").textContent = LKR(0);
     return;
   }
