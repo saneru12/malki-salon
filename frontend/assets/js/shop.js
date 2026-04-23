@@ -500,7 +500,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("checkoutBtn");
   if (btn) {
     btn.addEventListener("click", () => {
-      if (!isCustomerLoggedIn()) return requireLoginFor("Order");
+      if (!isCustomerLoggedIn()) 
+        return requireLoginFor("Order");
       placeOrder();
     });
     if (!isCustomerLoggedIn()) btn.textContent = "Login to Order";
