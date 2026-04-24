@@ -360,7 +360,7 @@ function renderCart() {
   if (!body) return;
 
   if (!entries.length) {
-    body.innerHTML = `<tr><td colspan="5" class="muted"></td></tr>`;
+    body.innerHTML = `<tr><td colspan="5" class="muted">Cart එක හිස්යි. Product එකක් Add කරන්න.</td></tr>`;
     document.getElementById("cartTotal").textContent = LKR(0);
     return;
   }
@@ -500,8 +500,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("checkoutBtn");
   if (btn) {
     btn.addEventListener("click", () => {
-      if (!isCustomerLoggedIn()) 
-        return requireLoginFor("Order");
+      if (!isCustomerLoggedIn()) return requireLoginFor("Order");
       placeOrder();
     });
     if (!isCustomerLoggedIn()) btn.textContent = "Login to Order";

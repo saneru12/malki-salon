@@ -9,6 +9,14 @@
     return d.toISOString().slice(0, 10);
   }
 
+  function formatMonthLabel(value) {
+    const raw = String(value || "").trim();
+    if (!/^\d{4}-\d{2}$/.test(raw)) return raw || "Selected month";
+    const [year, month] = raw.split("-").map(Number);
+    const date = new Date(Date.UTC(year, Math.max(0, month - 1), 1));
+    return new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(date);
+  }
+
   function modeLabel(value) {
     if (value === "salary_only") return "Salary only";
     if (value === "commission_only") return "Commission only";
@@ -122,6 +130,19 @@
     );
   }
 
+  function filterStaffList(staffList, staffRef = "") {
+    const selected = String(staffRef || "").trim();
+    if (!selected) return Array.isArray(staffList) ? staffList : [];
+    return (Array.isArray(staffList) ? staffList : []).filter((staff) => String(staff?._id || "") === selected);
+  }
+
+  function staffFilterLabel(staffList, staffRef = "") {
+    const selected = String(staffRef || "").trim();
+    if (!selected) return "all staff";
+    const staff = (Array.isArray(staffList) ? staffList : []).find((item) => String(item?._id || "") === selected);
+    return staff ? `${staff.name} (${staff.staffId})` : "selected staff";
+  }
+
   function buildServiceOptions(services, eh, selected = "", includeBlank = true) {
     const top = includeBlank ? `<option value="">No specific service</option>` : "";
     return (
@@ -158,6 +179,23 @@
       ctx.viewTitle.textContent = "Staff Management";
       ctx.viewHint.textContent = "Profiles, service assignment, attendance, work logs, and payroll";
 
+      function updateViewHint() {
+        const monthLabel = formatMonthLabel(state.month);
+        if (state.tab === "profiles") {
+          ctx.viewHint.textContent = `Profiles, service assignment, and ${monthLabel} staff snapshot`;
+          return;
+        }
+        if (state.tab === "attendance") {
+          ctx.viewHint.textContent = `Attendance records filtered for ${monthLabel}`;
+          return;
+        }
+        if (state.tab === "worklogs") {
+          ctx.viewHint.textContent = `Completed work and commission logs for ${monthLabel}`;
+          return;
+        }
+        ctx.viewHint.textContent = `Payroll summary and adjustments for ${monthLabel}`;
+      }
+
       async function loadBase() {
         const requests = [ctx.api("/staff/admin/all"), ctx.api("/services/admin/all")];
         if (canManageStaffManagerAccess) requests.push(ctx.api("/auth/staff-managers"));
@@ -167,28 +205,58 @@
         state.staffManagerUsers = canManageStaffManagerAccess ? (staffManagerUsers || []) : [];
       }
 
-      function profileTableHtml() {
+      async function profileTableHtml() {
         if (!state.staffList.length) {
           return `<div class="muted">No staff members yet. Add your first staff profile.</div>`;
         }
 
+        const filteredStaff = filterStaffList(state.staffList, state.staffRef);
+        const qs = new URLSearchParams({ month: state.month });
+        if (state.staffRef) qs.set("staffRef", state.staffRef);
+        const payroll = await ctx.api(`/staff-management/payroll?${qs.toString()}`);
+        const payrollByStaff = new Map((payroll?.summaries || []).map((row) => [String(row.staffRef || ""), row]));
+        const monthLabel = formatMonthLabel(state.month);
+        const filterLabel = staffFilterLabel(state.staffList, state.staffRef);
+
+        const cards = summaryCardsHtml(
+          [
+            { label: "Profiles shown", value: filteredStaff.length },
+            { label: "Active", value: filteredStaff.filter((staff) => staff.isActive !== false).length },
+            { label: "Inactive", value: filteredStaff.filter((staff) => staff.isActive === false).length },
+            { label: `${monthLabel} payroll`, value: payroll?.totals?.totalPayable || 0, isMoney: true }
+          ],
+          eh,
+          money
+        );
+
+        if (!filteredStaff.length) {
+          return (
+            cards +
+            `<div class="muted">No staff profile matches the current filter. Try choosing another staff member.</div>`
+          );
+        }
+
         return `
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Staff</th>
-                <th>Contact</th>
-                <th>Assigned services</th>
-                <th>Payroll mode</th>
-                <th>Base salary</th>
-                <th>Default commission</th>
-                <th>OT rule</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${state.staffList
+          ${cards}
+          <div class="muted" style="margin-bottom:12px;">Showing <b>${eh(filterLabel)}</b>. The month filter now updates the quick profile snapshot for <b>${eh(monthLabel)}</b>.</div>
+          <div class="staff-table-scroll">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Staff</th>
+                  <th>Contact</th>
+                  <th>Assigned services</th>
+                  <th>Payroll mode</th>
+                  <th>Base salary</th>
+                  <th>Default commission</th>
+                  <th>OT rule</th>
+                  <th>${eh(monthLabel)} snapshot</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredStaff
                 .map((staff) => {
                   const assignments = getAssignments(staff);
                   const preview = assignments
@@ -196,6 +264,8 @@
                     .map((item) => eh(item.service?.name || "Service"))
                     .join("<br>");
                   const compensation = staff.compensation || {};
+                  const payrollRow = payrollByStaff.get(String(staff._id || "")) || null;
+                  const overtimeHours = hoursFromMinutes(payrollRow?.adjustments?.overtimeMinutes || 0);
                   return `
                     <tr>
                       <td>
@@ -214,6 +284,11 @@
                       <td>LKR ${money(compensation.baseSalaryLKR || 0)}</td>
                       <td>${eh(String(compensation.defaultCommissionRatePct || 0))}%</td>
                       <td>${eh(overtimePolicyMeta(compensation).label)}</td>
+                      <td>
+                        <div>Paid units: <b>${eh(Number(payrollRow?.attendance?.paidUnits || 0).toFixed(1))}</b></div>
+                        <div class="muted">Jobs ${eh(String(payrollRow?.work?.jobsCount || 0))} • Revenue LKR ${money(payrollRow?.work?.grossRevenue || 0)}</div>
+                        <div class="muted">Payroll LKR ${money(payrollRow?.totalPayable || 0)} • OT ${eh(overtimeHours.toFixed(2))}h</div>
+                      </td>
                       <td>${pill(staff.isActive ? "Active" : "Inactive", staff.isActive ? "ok" : "bad")}</td>
                       <td>
                         <div class="actions">
@@ -224,8 +299,9 @@
                     </tr>`;
                 })
                 .join("")}
-            </tbody>
-          </table>`;
+              </tbody>
+            </table>
+          </div>`;
       }
 
       async function attendanceHtml() {
@@ -1079,6 +1155,7 @@
       }
 
       async function draw() {
+        updateViewHint();
         const body = await bodyHtml();
         ctx.content.innerHTML = `
           <div class="card">

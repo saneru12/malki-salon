@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Staff = require("../models/Staff");
 const Service = require("../models/Service");
 const Appointment = require("../models/Appointment");
@@ -43,6 +44,36 @@ async function requireStaff(staffRef) {
 
 async function findStaffByPublicId(staffId) {
   return Staff.findOne({ staffId: String(staffId || "").trim() });
+}
+
+async function resolveStaffSelection(staffRefOrId) {
+  const raw = String(staffRefOrId || "").trim();
+  if (!raw) return null;
+
+  if (mongoose.Types.ObjectId.isValid(raw)) {
+    const byRef = await Staff.findById(raw).select("_id staffId").lean();
+    if (byRef) return byRef;
+  }
+
+  const byPublicId = await Staff.findOne({ staffId: raw }).select("_id staffId").lean();
+  return byPublicId || null;
+}
+
+async function buildStaffRecordFilter(staffRefOrId) {
+  const raw = String(staffRefOrId || "").trim();
+  if (!raw) return {};
+
+  const staff = await resolveStaffSelection(raw);
+  if (staff?._id && staff?.staffId) {
+    return {
+      $or: [{ staffRef: staff._id }, { staffId: staff.staffId }]
+    };
+  }
+
+  if (mongoose.Types.ObjectId.isValid(raw)) {
+    return { staffRef: raw };
+  }
+  return { staffId: raw };
 }
 
 async function requireService(serviceRef) {
@@ -266,8 +297,10 @@ async function buildWorkLogPayload(body = {}, existing = null) {
 router.get("/attendance", async (req, res, next) => {
   try {
     const month = normalizeMonth(req.query.month);
-    const q = { date: monthRegex(month) };
-    if (req.query.staffRef) q.staffRef = req.query.staffRef;
+    const q = {
+      date: monthRegex(month),
+      ...(await buildStaffRecordFilter(req.query.staffRef || req.query.staffId))
+    };
     const records = await StaffAttendance.find(q).sort({ date: -1, staffName: 1 });
     res.json({ month, records, summary: summarizeAttendance(records) });
   } catch (err) {
@@ -335,8 +368,10 @@ router.delete("/attendance/:id", async (req, res, next) => {
 router.get("/work-logs", async (req, res, next) => {
   try {
     const month = normalizeMonth(req.query.month);
-    const q = { workDate: monthRegex(month) };
-    if (req.query.staffRef) q.staffRef = req.query.staffRef;
+    const q = {
+      workDate: monthRegex(month),
+      ...(await buildStaffRecordFilter(req.query.staffRef || req.query.staffId))
+    };
     const records = await StaffWorkLog.find(q).sort({ workDate: -1, createdAt: -1 });
     res.json({ month, records, summary: summarizeWorkLogs(records) });
   } catch (err) {
@@ -475,8 +510,10 @@ router.post("/work-logs/from-appointment", async (req, res, next) => {
 router.get("/adjustments", async (req, res, next) => {
   try {
     const month = normalizeMonth(req.query.month);
-    const q = { month };
-    if (req.query.staffRef) q.staffRef = req.query.staffRef;
+    const q = {
+      month,
+      ...(await buildStaffRecordFilter(req.query.staffRef || req.query.staffId))
+    };
     const records = await StaffPayrollAdjustment.find(q).sort({ appointmentDate: -1, createdAt: -1 });
     res.json({ month, records, summary: summarizeAdjustments(records) });
   } catch (err) {
@@ -554,14 +591,15 @@ router.delete("/adjustments/:id", async (req, res, next) => {
 router.get("/payroll", async (req, res, next) => {
   try {
     const month = normalizeMonth(req.query.month);
-    const q = {};
-    if (req.query.staffRef) q._id = req.query.staffRef;
+    const selectedStaff = await resolveStaffSelection(req.query.staffRef || req.query.staffId);
+    const q = selectedStaff?._id ? { _id: selectedStaff._id } : {};
+    const recordFilter = await buildStaffRecordFilter(req.query.staffRef || req.query.staffId);
     const staffList = await Staff.find(q).sort({ sortOrder: 1, name: 1 });
 
     const [attendanceList, workLogs, adjustments] = await Promise.all([
-      StaffAttendance.find({ date: monthRegex(month), ...(req.query.staffRef ? { staffRef: req.query.staffRef } : {}) }),
-      StaffWorkLog.find({ workDate: monthRegex(month), ...(req.query.staffRef ? { staffRef: req.query.staffRef } : {}) }),
-      StaffPayrollAdjustment.find({ month, ...(req.query.staffRef ? { staffRef: req.query.staffRef } : {}) })
+      StaffAttendance.find({ date: monthRegex(month), ...recordFilter }),
+      StaffWorkLog.find({ workDate: monthRegex(month), ...recordFilter }),
+      StaffPayrollAdjustment.find({ month, ...recordFilter })
     ]);
 
     const summaries = staffList.map((staff) =>

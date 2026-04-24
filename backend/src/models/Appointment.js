@@ -111,6 +111,10 @@ const appointmentSchema = new mongoose.Schema(
 
     payment: { type: paymentSchema, default: () => ({}) },
 
+    adminDeletedAt: { type: Date, default: null },
+    adminDeletedBy: { type: String, default: "" },
+    adminDeletionReason: { type: String, default: "" },
+
     notes: { type: String, default: "" },
     status: { type: String, default: "pending" }
   },
