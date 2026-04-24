@@ -38,6 +38,10 @@ const staffSchema = new mongoose.Schema(
     desc: { type: String, default: "" },
     imgUrl: { type: String, default: "" },
     isActive: { type: Boolean, default: true },
+    isArchived: { type: Boolean, default: false },
+    archivedAt: { type: Date, default: null },
+    archivedBy: { type: String, default: "" },
+    archiveReason: { type: String, default: "" },
     sortOrder: { type: Number, default: 0 },
     serviceAssignments: { type: [serviceAssignmentSchema], default: [] },
     compensation: { type: compensationSchema, default: () => ({}) }
@@ -45,6 +49,6 @@ const staffSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-staffSchema.index({ isActive: 1, sortOrder: 1, name: 1 });
+staffSchema.index({ isArchived: 1, isActive: 1, sortOrder: 1, name: 1 });
 
 module.exports = mongoose.model("Staff", staffSchema);

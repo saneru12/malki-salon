@@ -17,6 +17,11 @@
     return new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(date);
   }
 
+  function monthFromDateValue(value) {
+    const raw = String(value || "").trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw.slice(0, 7) : "";
+  }
+
   function modeLabel(value) {
     if (value === "salary_only") return "Salary only";
     if (value === "commission_only") return "Commission only";
@@ -143,6 +148,35 @@
     return staff ? `${staff.name} (${staff.staffId})` : "selected staff";
   }
 
+  function staffHasMonthActivity(staff, payrollRow, month) {
+    const joinedMonth = monthFromDateValue(staff?.joinedDate || "");
+    if (joinedMonth && joinedMonth === String(month || "")) return true;
+
+    const attendanceRecords = Number(payrollRow?.attendance?.totalRecords || 0);
+    const paidUnits = Number(payrollRow?.attendance?.paidUnits || 0);
+    const jobsCount = Number(payrollRow?.work?.jobsCount || 0);
+    const cancelledCount = Number(payrollRow?.work?.cancelledCount || 0);
+    const grossRevenue = Number(payrollRow?.work?.grossRevenue || 0);
+    const commissionTotal = Number(payrollRow?.work?.commissionTotal || 0);
+    const manualAdjustments = Number(payrollRow?.adjustments?.manualCount || 0);
+    const systemAdjustments = Number(payrollRow?.adjustments?.systemCount || 0);
+    const overtimeMinutes = Number(payrollRow?.adjustments?.overtimeMinutes || 0);
+    const payable = Number(payrollRow?.totalPayable || 0);
+
+    return [
+      attendanceRecords,
+      paidUnits,
+      jobsCount,
+      cancelledCount,
+      grossRevenue,
+      commissionTotal,
+      manualAdjustments,
+      systemAdjustments,
+      overtimeMinutes,
+      payable
+    ].some((value) => value > 0);
+  }
+
   function buildServiceOptions(services, eh, selected = "", includeBlank = true) {
     const top = includeBlank ? `<option value="">No specific service</option>` : "";
     return (
@@ -203,6 +237,9 @@
         state.staffList = staffList || [];
         state.services = services || [];
         state.staffManagerUsers = canManageStaffManagerAccess ? (staffManagerUsers || []) : [];
+        if (state.staffRef && !state.staffList.some((item) => String(item?._id || "") === String(state.staffRef))) {
+          state.staffRef = "";
+        }
       }
 
       async function profileTableHtml() {
@@ -210,7 +247,7 @@
           return `<div class="muted">No staff members yet. Add your first staff profile.</div>`;
         }
 
-        const filteredStaff = filterStaffList(state.staffList, state.staffRef);
+        const baseFilteredStaff = filterStaffList(state.staffList, state.staffRef);
         const qs = new URLSearchParams({ month: state.month });
         if (state.staffRef) qs.set("staffRef", state.staffRef);
         const payroll = await ctx.api(`/staff-management/payroll?${qs.toString()}`);
@@ -218,27 +255,40 @@
         const monthLabel = formatMonthLabel(state.month);
         const filterLabel = staffFilterLabel(state.staffList, state.staffRef);
 
+        const activityFilteredStaff = state.staffRef
+          ? baseFilteredStaff
+          : baseFilteredStaff.filter((staff) => staffHasMonthActivity(staff, payrollByStaff.get(String(staff._id || "")) || null, state.month));
+        const showingFallbackProfiles = !state.staffRef && !activityFilteredStaff.length && baseFilteredStaff.length > 0;
+        const visibleStaff = showingFallbackProfiles ? baseFilteredStaff : activityFilteredStaff;
+        const monthMatchedCount = activityFilteredStaff.length;
+
         const cards = summaryCardsHtml(
           [
-            { label: "Profiles shown", value: filteredStaff.length },
-            { label: "Active", value: filteredStaff.filter((staff) => staff.isActive !== false).length },
-            { label: "Inactive", value: filteredStaff.filter((staff) => staff.isActive === false).length },
+            { label: "Profiles shown", value: visibleStaff.length },
+            { label: "Active", value: visibleStaff.filter((staff) => staff.isActive !== false).length },
+            { label: "Inactive", value: visibleStaff.filter((staff) => staff.isActive === false).length },
             { label: `${monthLabel} payroll`, value: payroll?.totals?.totalPayable || 0, isMoney: true }
           ],
           eh,
           money
         );
 
-        if (!filteredStaff.length) {
+        if (!visibleStaff.length) {
           return (
             cards +
             `<div class="muted">No staff profile matches the current filter. Try choosing another staff member.</div>`
           );
         }
 
+        const profileFilterMessage = state.staffRef
+          ? `Showing <b>${eh(filterLabel)}</b> with the ${eh(monthLabel)} snapshot.`
+          : showingFallbackProfiles
+            ? `No profile activity was found for <b>${eh(monthLabel)}</b>, so all staff are shown. Use the staff filter to inspect one person directly.`
+            : `Showing <b>${eh(String(monthMatchedCount))}</b> profile${monthMatchedCount === 1 ? "" : "s"} with activity or join dates in <b>${eh(monthLabel)}</b>. Staff filter: <b>${eh(filterLabel)}</b>.`;
+
         return `
           ${cards}
-          <div class="muted" style="margin-bottom:12px;">Showing <b>${eh(filterLabel)}</b>. The month filter now updates the quick profile snapshot for <b>${eh(monthLabel)}</b>.</div>
+          <div class="muted" style="margin-bottom:12px;">${profileFilterMessage}</div>
           <div class="staff-table-scroll">
             <table class="table">
               <thead>
@@ -256,7 +306,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${filteredStaff
+                ${visibleStaff
                 .map((staff) => {
                   const assignments = getAssignments(staff);
                   const preview = assignments
@@ -1150,8 +1200,12 @@
 
       async function deleteByPath(path, message) {
         if (!confirm(message)) return;
-        await ctx.api(path, { method: "DELETE" });
+        const result = await ctx.api(path, { method: "DELETE" });
+        await loadBase();
         await draw();
+        if (result?.archived && result?.message) {
+          alert(result.message);
+        }
       }
 
       async function draw() {
@@ -1194,14 +1248,27 @@
             await draw();
           });
         });
-        document.getElementById("smMonth").addEventListener("change", async (e) => {
-          state.month = e.target.value || monthValue();
+
+        const monthInput = document.getElementById("smMonth");
+        const handleMonthChange = async (e) => {
+          const nextMonth = e.target.value || monthValue();
+          if (nextMonth === state.month) return;
+          state.month = nextMonth;
           await draw();
-        });
-        document.getElementById("smStaffFilter").addEventListener("change", async (e) => {
-          state.staffRef = e.target.value || "";
+        };
+        monthInput.addEventListener("change", handleMonthChange);
+        monthInput.addEventListener("input", handleMonthChange);
+
+        const staffFilterInput = document.getElementById("smStaffFilter");
+        const handleStaffFilterChange = async (e) => {
+          const nextStaffRef = e.target.value || "";
+          if (nextStaffRef === state.staffRef) return;
+          state.staffRef = nextStaffRef;
           await draw();
-        });
+        };
+        staffFilterInput.addEventListener("change", handleStaffFilterChange);
+        staffFilterInput.addEventListener("input", handleStaffFilterChange);
+
         document.getElementById("smRefreshBtn").addEventListener("click", async () => {
           await loadBase();
           await draw();
@@ -1245,7 +1312,7 @@
               if (act === "edit-staff-manager") return openStaffManagerForm(staffManagerUser);
               if (act === "delete-staff-manager") return deleteByPath(`/auth/staff-managers/${id}`, "Delete this staff manager login?");
               if (act === "edit-profile") return openProfileForm(staff);
-              if (act === "delete-profile") return deleteByPath(`/staff/admin/${id}`, "Delete this staff member? History-linked profiles can only be made inactive.");
+              if (act === "delete-profile") return deleteByPath(`/staff/admin/${id}`, "Delete this staff member? If linked booking or payroll history exists, the profile will be archived and hidden instead of being hard-deleted.");
 
               if (act === "edit-attendance") {
                 const data = await ctx.api(`/staff-management/attendance?month=${encodeURIComponent(state.month)}${state.staffRef ? `&staffRef=${encodeURIComponent(state.staffRef)}` : ""}`);

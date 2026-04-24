@@ -592,15 +592,36 @@ router.get("/payroll", async (req, res, next) => {
   try {
     const month = normalizeMonth(req.query.month);
     const selectedStaff = await resolveStaffSelection(req.query.staffRef || req.query.staffId);
-    const q = selectedStaff?._id ? { _id: selectedStaff._id } : {};
+    const q = selectedStaff?._id ? { _id: selectedStaff._id } : { isArchived: { $ne: true } };
     const recordFilter = await buildStaffRecordFilter(req.query.staffRef || req.query.staffId);
-    const staffList = await Staff.find(q).sort({ sortOrder: 1, name: 1 });
 
-    const [attendanceList, workLogs, adjustments] = await Promise.all([
+    const [baseStaffList, attendanceList, workLogs, adjustments] = await Promise.all([
+      Staff.find(q).sort({ sortOrder: 1, name: 1 }),
       StaffAttendance.find({ date: monthRegex(month), ...recordFilter }),
       StaffWorkLog.find({ workDate: monthRegex(month), ...recordFilter }),
       StaffPayrollAdjustment.find({ month, ...recordFilter })
     ]);
+
+    const staffMap = new Map((baseStaffList || []).map((staff) => [String(staff._id), staff]));
+    const historicalStaffIds = new Set(
+      [...attendanceList, ...workLogs, ...adjustments]
+        .map((item) => String(item?.staffRef || "").trim())
+        .filter(Boolean)
+    );
+    const missingHistoricalIds = Array.from(historicalStaffIds).filter((id) => !staffMap.has(id));
+
+    if (missingHistoricalIds.length) {
+      const archivedStaff = await Staff.find({ _id: { $in: missingHistoricalIds } });
+      archivedStaff.forEach((staff) => {
+        staffMap.set(String(staff._id), staff);
+      });
+    }
+
+    const staffList = Array.from(staffMap.values()).sort((a, b) => {
+      const sortDiff = Number(a?.sortOrder || 0) - Number(b?.sortOrder || 0);
+      if (sortDiff !== 0) return sortDiff;
+      return String(a?.name || "").localeCompare(String(b?.name || ""), "en", { sensitivity: "base" });
+    });
 
     const summaries = staffList.map((staff) =>
       payrollSummaryForStaff(
