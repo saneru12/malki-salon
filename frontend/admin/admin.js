@@ -370,11 +370,13 @@
                   const timeText = a.bookingMode === "manual-review"
                     ? (a.status === "proposal_sent" && a.pendingProposal?.time
                         ? `${a.pendingProposal.date || ""} • ${a.pendingProposal.time}${a.pendingProposal.endTime ? ` - ${a.pendingProposal.endTime}` : ""}`
+                        : a.status === "deleted_by_admin"
+                          ? "Removed by salon"
                         : a.status === "approved"
                           ? `${a.time || ""}${a.endTime ? ` - ${a.endTime}` : ""}`
                           : "Manual review")
                     : `${a.time || ""}${a.endTime ? ` - ${a.endTime}` : ""}`;
-                  const kind = a.status === "approved" ? "ok" : a.status === "cancelled" ? "bad" : "warn";
+                  const kind = a.status === "approved" ? "ok" : ["cancelled", "deleted_by_admin"].includes(a.status) ? "bad" : "warn";
                   return `
                     <tr>
                       <td>${escapeHtml(dateText)}</td>
@@ -382,7 +384,7 @@
                       <td>${escapeHtml(a.staffName)}</td>
                       <td>${escapeHtml(a.customerName)}<div class="muted">${escapeHtml(a.phone)}</div></td>
                       <td>${escapeHtml(a.serviceName)}</td>
-                      <td>${pill(a.status, kind)}</td>
+                      <td>${pill(appointmentStatusLabel(a.status), kind)}</td>
                     </tr>`;
                 })
                 .join("")}
@@ -430,14 +432,15 @@
       proposal_sent: "Proposal sent",
       customer_reschedule_requested: "Needs new proposal",
       approved: "Approved",
-      cancelled: "Cancelled"
+      cancelled: "Cancelled",
+      deleted_by_admin: "Removed by salon"
     };
     return map[String(status || "").trim()] || String(status || "—");
   }
 
   function appointmentStatusKind(status) {
     if (status === "approved") return "ok";
-    if (status === "cancelled") return "bad";
+    if (status === "cancelled" || status === "deleted_by_admin") return "bad";
     return "warn";
   }
 
@@ -546,6 +549,11 @@
       return html;
     }
 
+    if (item.status === "deleted_by_admin") {
+      html += `<div class="muted" style="margin-top:6px;">Removed by salon${item.adminDeletedAt ? ` • ${escapeHtml(new Date(item.adminDeletedAt).toLocaleString())}` : ""}</div>`;
+      return html;
+    }
+
     if (appointmentHasPendingProposal(item)) {
       html += `<div class="muted" style="margin-top:6px;"><b>Current proposal:</b> ${escapeHtml(appointmentRange(item.pendingProposal.date, item.pendingProposal.time, item.pendingProposal.endTime))}</div>`;
     } else if (item.status === "customer_reschedule_requested") {
@@ -574,6 +582,7 @@
                 <option value="customer_reschedule_requested">Needs New Proposal</option>
                 <option value="approved">Approved</option>
                 <option value="cancelled">Cancelled</option>
+                <option value="deleted_by_admin">Removed by Salon</option>
               </select>
             </div>
             <div style="min-width:210px">
@@ -651,7 +660,7 @@
                 ? (["pending_review", "proposal_sent", "customer_reschedule_requested"].includes(a.status)
                     ? `<button class="btn" data-act="propose" data-id="${a._id}">${a.status === "proposal_sent" ? "Revise Proposal" : "Send Proposal"}</button>`
                     : "")
-                : (a.status !== "approved" && a.status !== "cancelled"
+                : (!["approved", "cancelled", "deleted_by_admin"].includes(a.status)
                     ? `<button class="btn" data-act="approve" data-id="${a._id}">Approve</button>`
                     : "");
               return `
@@ -671,9 +680,9 @@
                       <button class="btn secondary" data-act="view" data-id="${a._id}">View</button>
                       ${primaryAction}
                       ${paymentAction}
-                      ${a.status !== "cancelled" ? `<button class="btn secondary" data-act="cancel" data-id="${a._id}">Cancel</button>` : ""}
+                      ${!["cancelled", "deleted_by_admin"].includes(a.status) ? `<button class="btn secondary" data-act="cancel" data-id="${a._id}">Cancel</button>` : ""}
                       <button class="btn secondary" data-act="note" data-id="${a._id}">Edit salon note</button>
-                      <button class="btn secondary" data-act="delete" data-id="${a._id}">Delete</button>
+                      ${a.status !== "deleted_by_admin" ? `<button class="btn secondary" data-act="delete" data-id="${a._id}">Remove</button>` : ""}
                     </div>
                   </td>
                 </tr>`;
@@ -708,9 +717,10 @@
           <div class="col-6"><div class="muted">Service</div><div><b>${escapeHtml(item.serviceName)}</b><br>${escapeHtml(item.bookingMode === "manual-review" ? "Manual review request" : item.allowAnyTimeBooking ? "24/7 exact slot" : "Instant slot")}</div></div>
           <div class="col-6"><div class="muted">Status</div><div>${pill(appointmentStatusLabel(item.status), appointmentStatusKind(item.status))}</div></div>
           <div class="col-6"><div class="muted">Preferred date</div><div>${escapeHtml(item.preferredDate || item.date || "—")}</div></div>
-          <div class="col-6"><div class="muted">Confirmed slot</div><div>${escapeHtml(item.status === "approved" ? appointmentRange(item.date, item.time, item.endTime) : "Not confirmed yet")}</div></div>
+          <div class="col-6"><div class="muted">Confirmed slot</div><div>${escapeHtml(item.status === "approved" || item.status === "deleted_by_admin" ? appointmentRange(item.date, item.time, item.endTime) : "Not confirmed yet")}</div></div>
           <div class="col-12"><div class="muted">Customer note</div><div>${escapeHtml(item.notes || "—")}</div></div>
           <div class="col-12"><div class="muted">Salon note</div><div>${escapeHtml(item.adminReviewNote || "—")}</div></div>
+          <div class="col-12"><div class="muted">Removal details</div><div>${escapeHtml(item.adminDeletedAt ? `Removed on ${new Date(item.adminDeletedAt).toLocaleString()}` : "—")}${item.adminDeletionReason ? `<div class="muted" style="margin-top:6px;">${escapeHtml(item.adminDeletionReason)}</div>` : ""}</div></div>
           <div class="col-12"><div class="muted">Latest customer response</div><div>${escapeHtml(item.customerResponseNote || "—")}</div></div>
           <div class="col-12"><div class="muted">Current proposal</div>${proposalNow}</div>
           <div class="col-12"><div class="muted">Proposal history</div>${proposalHistoryHtml(item)}</div>
@@ -831,8 +841,12 @@
           } else if (act === "cancel") {
             await api(`/appointments/admin/${id}`, { method: "PUT", body: JSON.stringify({ status: "cancelled" }) });
           } else if (act === "delete") {
-            if (!confirm("Delete this appointment permanently?")) return;
-            await api(`/appointments/admin/${id}`, { method: "DELETE" });
+            const note = prompt(
+              "Optional note for the customer. Press OK to remove this booking from the salon side while keeping a customer-visible record.",
+              item.adminDeletionReason || item.adminReviewNote || ""
+            );
+            if (note === null) return;
+            await api(`/appointments/admin/${id}`, { method: "DELETE", body: JSON.stringify({ reason: note }) });
           } else if (act === "note") {
             showModal(
               "Edit salon note",

@@ -36,14 +36,15 @@
       proposal_sent: "Awaiting your reply",
       customer_reschedule_requested: "Waiting for new proposal",
       approved: "Confirmed",
-      cancelled: "Cancelled"
+      cancelled: "Cancelled",
+      deleted_by_admin: "Removed by salon"
     };
     return map[String(status || "").trim()] || String(status || "—");
   }
 
   function statusKind(status) {
     if (status === "approved") return "ok";
-    if (status === "cancelled") return "danger";
+    if (status === "cancelled" || status === "deleted_by_admin") return "danger";
     return "warn";
   }
 
@@ -351,6 +352,8 @@
     let extra = `<div class="muted" style="margin-top:6px;">Preferred date: ${escapeHtml(preferredDate || "—")}</div>`;
     if (a.status === "approved") {
       extra += `<div style="margin-top:6px;"><span class="muted">Confirmed slot:</span> ${escapeHtml(confirmedText)}</div>`;
+    } else if (a.status === "deleted_by_admin") {
+      extra += `<div class="muted" style="margin-top:6px;">The salon removed this request before it was completed.</div>`;
     } else if (hasPendingProposal(a)) {
       extra += `<div style="margin-top:6px;"><span class="muted">Salon proposal:</span> ${escapeHtml(proposedText)}</div>`;
     } else if (a.status === "customer_reschedule_requested") {
@@ -371,6 +374,19 @@
       ${a.notes ? `<div class="muted" style="margin-top:6px;">Your notes: ${escapeHtml(a.notes)}</div>` : ""}
       ${salonNote ? `<div class="muted" style="margin-top:6px;">Salon note: ${escapeHtml(salonNote)}</div>` : ""}
       ${responseNote}
+    `;
+  }
+
+  function renderSalonRemovalNotice(a) {
+    if (a?.status !== "deleted_by_admin") return "";
+    const removedAt = a?.adminDeletedAt ? formatDateTime(a.adminDeletedAt) : "";
+    const reason = String(a?.adminDeletionReason || a?.adminReviewNote || "").trim();
+    return `
+      <div style="margin-top:12px; padding:12px; border-radius:14px; background:rgba(231,76,60,.08); border:1px solid rgba(231,76,60,.18);">
+        <div style="font-weight:800;">Salon removed this booking</div>
+        <div class="muted" style="margin-top:6px;">${escapeHtml(removedAt ? `Removed on ${removedAt}.` : "The salon removed this booking from their side.")}</div>
+        ${reason ? `<div class="muted" style="margin-top:6px;">Reason: ${escapeHtml(reason)}</div>` : `<div class="muted" style="margin-top:6px;">If you still want this service, please make a new booking or send a message to the salon.</div>`}
+      </div>
     `;
   }
 
@@ -412,6 +428,8 @@
           </div>
           <div class="chip ${statusKind(a.status)}">${escapeHtml(statusLabel(a.status))}</div>
         </div>
+
+        ${renderSalonRemovalNotice(a)}
 
         <div style="margin-top:12px; line-height:1.5;">
           ${renderBookingTiming(a)}
@@ -718,7 +736,7 @@
   }
 
   function canCustomerCancelOrder(order) {
-    return ["pending", "confirmed"].includes(order?.status) && (order?.items || []).some((item) => itemRemainingQty(item) > 0);
+    return ["pending"].includes(order?.status) && (order?.items || []).some((item) => itemRemainingQty(item) > 0);
   }
 
   function canCustomerConfirmDelivery(order) {
@@ -904,7 +922,7 @@
     return `
       <div style="margin-top:12px; padding:12px; border-radius:14px; border:1px solid rgba(194,24,91,.16); background:rgba(194,24,91,.05);">
         <div style="font-weight:800;">Cancel selected items</div>
-        <div class="muted" style="margin-top:6px;">Choose a cancellation quantity for any order line below. You can cancel one unit from the same item, several units, different item types together, or the full remaining order before courier handover.</div>
+        <div class="muted" style="margin-top:6px;">Choose a cancellation quantity for any order line below. You can cancel one unit from the same item, several units, different item types together, or the full remaining order only until the salon approves this order.</div>
         <label class="muted" style="margin-top:10px; display:block;">Cancellation note (optional)</label>
         <textarea class="input" data-item-cancel-note="${escapeHtml(order._id)}" rows="3" placeholder="Example: Please remove two lipsticks from this order."></textarea>
         <div class="actions" style="margin-top:10px;">
@@ -1073,7 +1091,7 @@
     ordersWrap.querySelectorAll("button[data-ocancel]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-ocancel");
-        if (!confirm("Cancel all remaining items in this order before courier handover?")) return;
+        if (!confirm("Cancel all remaining items in this order before salon approval?")) return;
         btn.disabled = true;
         const res = await fetch(`${API_BASE}/orders/me/${id}/cancel`, {
           method: "PUT",

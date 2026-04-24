@@ -4,6 +4,7 @@ const Service = require("../models/Service");
 const Staff = require("../models/Staff");
 const Settings = require("../models/Settings");
 const Customer = require("../models/Customer");
+const ContactMessage = require("../models/ContactMessage");
 const { authRequired, adminOnly, customerOnly } = require("../middleware/auth");
 const { resolveStaffServiceConfig, getServiceDurationForStaff, getServicePriceForStaff } = require("../utils/staffManagement");
 const { syncAppointmentOvertimeAdjustment, purgeAppointmentOvertimeAdjustment } = require("../utils/appointmentOvertime");
@@ -18,6 +19,7 @@ const DEFAULT_CLOSE_TIME = "17:00";
 const DEFAULT_ADVANCE_PAYMENT_PERCENT = 25;
 const PAYMENT_METHODS = ["bank_transfer", "online_transfer", "crypto", "skrill"];
 const SALON_TIME_ZONE = process.env.SALON_TIME_ZONE || "Asia/Colombo";
+const ADMIN_REMOVED_STATUS = "deleted_by_admin";
 
 function getTimeZoneSnapshot(date = new Date(), timeZone = SALON_TIME_ZONE) {
   const formatter = new Intl.DateTimeFormat("en-CA", {
@@ -358,9 +360,72 @@ function normalizeManualFields(obj) {
   return obj;
 }
 
+function normalizeAdminRemovalFields(obj) {
+  if (!Object.prototype.hasOwnProperty.call(obj, "adminDeletedAt")) obj.adminDeletedAt = null;
+  if (!Object.prototype.hasOwnProperty.call(obj, "adminDeletedBy")) obj.adminDeletedBy = "";
+  if (!Object.prototype.hasOwnProperty.call(obj, "adminDeletionReason")) obj.adminDeletionReason = "";
+  obj.adminDeletedBy = String(obj.adminDeletedBy || "").trim();
+  obj.adminDeletionReason = String(obj.adminDeletionReason || "").trim();
+  return obj;
+}
+
+function appointmentReferenceText(appt) {
+  const date = String(appt?.date || appt?.preferredDate || "").trim();
+  const time = String(appt?.time || "").trim();
+  return [date, time].filter(Boolean).join(" at ");
+}
+
+function appointmentCustomerNoticeMessage(appt, action) {
+  const service = String(appt?.serviceName || "your booking").trim() || "your booking";
+  const reference = appointmentReferenceText(appt);
+  const reason = String(appt?.adminDeletionReason || appt?.adminReviewNote || "").trim();
+
+  if (action === ADMIN_REMOVED_STATUS) {
+    return [
+      `Salon update: Your booking for ${service}${reference ? ` (${reference})` : ""} was removed by the salon.`,
+      reason ? `Note: ${reason}` : "This booking will stay visible in My Account so you can see what happened."
+    ].join(" ");
+  }
+
+  if (action === "cancelled") {
+    return [
+      `Salon update: Your booking for ${service}${reference ? ` (${reference})` : ""} was cancelled by the salon.`,
+      reason ? `Note: ${reason}` : "Please contact the salon if you need another appointment."
+    ].join(" ");
+  }
+
+  return "";
+}
+
+async function createAdminAppointmentNotice(appt, action, adminEmail = "") {
+  const message = appointmentCustomerNoticeMessage(appt, action);
+  if (!appt?.customerId || !message) return;
+
+  try {
+    await ContactMessage.create({
+      customer: appt.customerId,
+      sender: "admin",
+      message,
+      readByAdmin: true,
+      readByCustomer: false,
+      customerSnapshot: {
+        name: String(appt.customerName || "").trim(),
+        email: String(appt.email || "").trim(),
+        phone: String(appt.phone || "").trim()
+      },
+      adminSnapshot: {
+        email: String(adminEmail || "").trim()
+      }
+    });
+  } catch (err) {
+    console.error("Could not create appointment update message:", err.message || err);
+  }
+}
+
 function normalizeAppointment(doc) {
   const obj = doc?.toObject ? doc.toObject() : { ...(doc || {}) };
   normalizeManualFields(obj);
+  normalizeAdminRemovalFields(obj);
   if (obj.bookingMode !== "manual-review") {
     const start = parseTimeToMin(obj.time);
     const dur = Number(obj.durationMin) || Number(obj?.serviceId?.durationMin) || 30;
@@ -784,7 +849,7 @@ router.put("/admin/:id/propose-manual", authRequired, adminOnly, async (req, res
     if (appt.bookingMode !== "manual-review") {
       return res.status(409).json({ message: "This booking is not a manual review request." });
     }
-    if (["approved", "cancelled"].includes(appt.status)) {
+    if (["approved", "cancelled", ADMIN_REMOVED_STATUS].includes(appt.status)) {
       return res.status(409).json({ message: "This booking can no longer receive new proposals." });
     }
 
@@ -928,7 +993,26 @@ router.put("/admin/:id", authRequired, adminOnly, async (req, res) => {
       appt.durationMin = durationMin;
     }
 
-    if (String(appt.status || "").trim() === "approved" && prevStatus !== "approved") {
+    const nextStatus = String(appt.status || "").trim();
+
+    if (nextStatus !== ADMIN_REMOVED_STATUS) {
+      appt.adminDeletedAt = null;
+      appt.adminDeletedBy = "";
+      appt.adminDeletionReason = "";
+    }
+
+    if (nextStatus === "cancelled" && prevStatus !== "cancelled") {
+      if (appt.bookingMode === "manual-review" && hasPendingProposal(appt)) {
+        archivePendingProposal(appt, {
+          customerResponse: "cancelled",
+          customerResponseNote: "Booking cancelled by salon.",
+          respondedAt: new Date()
+        });
+        appt.pendingProposal = emptyProposal();
+      }
+    }
+
+    if (nextStatus === "approved" && prevStatus !== "approved") {
       appt.finalConfirmedAt = new Date();
     }
 
@@ -943,6 +1027,11 @@ router.put("/admin/:id", authRequired, adminOnly, async (req, res) => {
 
     await appt.save();
     await syncAppointmentOvertimeAdjustment(appt);
+
+    if (nextStatus === "cancelled" && prevStatus !== "cancelled") {
+      await createAdminAppointmentNotice(appt, "cancelled", req.user?.email || req.user?.uid || "admin");
+    }
+
     return res.json(normalizeAppointment(appt));
   } catch (err) {
     return res.status(500).json({ message: err.message || "Server error" });
@@ -951,10 +1040,43 @@ router.put("/admin/:id", authRequired, adminOnly, async (req, res) => {
 
 router.delete("/admin/:id", authRequired, adminOnly, async (req, res) => {
   try {
-    const deleted = await Appointment.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Not found" });
-    await purgeAppointmentOvertimeAdjustment(deleted._id);
-    return res.json({ ok: true });
+    const hardDelete = String(req.query?.hard || "").trim().toLowerCase() === "true";
+
+    if (hardDelete) {
+      const deleted = await Appointment.findByIdAndDelete(req.params.id);
+      if (!deleted) return res.status(404).json({ message: "Not found" });
+      await purgeAppointmentOvertimeAdjustment(deleted._id);
+      return res.json({ ok: true, hardDeleted: true });
+    }
+
+    const appt = await Appointment.findById(req.params.id);
+    if (!appt) return res.status(404).json({ message: "Not found" });
+
+    if (String(appt.status || "").trim() === ADMIN_REMOVED_STATUS) {
+      return res.json({ ok: true, appointment: normalizeAppointment(appt), alreadyRemoved: true });
+    }
+
+    const reason = String(req.body?.reason || "").trim();
+    if (appt.bookingMode === "manual-review" && hasPendingProposal(appt)) {
+      archivePendingProposal(appt, {
+        customerResponse: "cancelled",
+        customerResponseNote: "Booking removed by salon.",
+        respondedAt: new Date()
+      });
+      appt.pendingProposal = emptyProposal();
+    }
+
+    appt.status = ADMIN_REMOVED_STATUS;
+    appt.adminDeletedAt = new Date();
+    appt.adminDeletedBy = String(req.user?.email || req.user?.uid || "admin").trim();
+    appt.adminDeletionReason = reason;
+    syncPaymentState(appt);
+
+    await appt.save();
+    await syncAppointmentOvertimeAdjustment(appt);
+    await createAdminAppointmentNotice(appt, ADMIN_REMOVED_STATUS, appt.adminDeletedBy);
+
+    return res.json({ ok: true, softDeleted: true, appointment: normalizeAppointment(appt) });
   } catch (err) {
     return res.status(500).json({ message: err.message || "Server error" });
   }

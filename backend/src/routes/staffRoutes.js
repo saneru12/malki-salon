@@ -36,6 +36,10 @@ function sanitizeStaffPayload(body = {}) {
     imgUrl: String(body.imgUrl || "").trim(),
     sortOrder: Number.isFinite(Number(body.sortOrder)) ? Number(body.sortOrder) : 0,
     isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
+    isArchived: body.isArchived === true,
+    archivedAt: body.archivedAt || null,
+    archivedBy: String(body.archivedBy || "").trim(),
+    archiveReason: String(body.archiveReason || "").trim(),
     serviceAssignments: dedupeAssignments(normalizeServiceAssignments(body.serviceAssignments || [])),
     compensation: normalizeCompensation(body.compensation || {})
   };
@@ -80,6 +84,10 @@ function serializeStaff(doc, { publicView = false } = {}) {
     desc: obj.desc || "",
     imgUrl: obj.imgUrl || "",
     isActive: obj.isActive !== false,
+    isArchived: obj.isArchived === true,
+    archivedAt: obj.archivedAt || null,
+    archivedBy: obj.archivedBy || "",
+    archiveReason: obj.archiveReason || "",
     sortOrder: Number(obj.sortOrder || 0),
     serviceAssignments: serializeAssignments(obj.serviceAssignments || [], { publicView })
   };
@@ -104,8 +112,13 @@ async function getHistoryCounts(staff) {
   return { appointments, attendance, workLogs, adjustments, total: appointments + attendance + workLogs + adjustments };
 }
 
-async function fetchStaff(filter) {
-  return Staff.find(filter)
+async function fetchStaff(filter = {}, { includeArchived = false } = {}) {
+  const finalFilter = {
+    ...(filter || {}),
+    ...(includeArchived ? {} : { isArchived: { $ne: true } })
+  };
+
+  return Staff.find(finalFilter)
     .populate({
       path: "serviceAssignments.serviceId",
       select: "category name priceLKR durationMin isActive"
@@ -134,7 +147,8 @@ router.get("/", async (req, res, next) => {
 
 router.get("/admin/all", authRequired, adminOrStaffManagerOnly, async (req, res, next) => {
   try {
-    const list = await fetchStaff({});
+    const includeArchived = String(req.query.includeArchived || "").trim().toLowerCase() === "true";
+    const list = await fetchStaff({}, { includeArchived });
     res.json(list.map((item) => serializeStaff(item)));
   } catch (e) {
     next(e);
@@ -191,6 +205,12 @@ router.put("/admin/:id", authRequired, adminOrStaffManagerOnly, async (req, res,
     existing.imgUrl = payload.imgUrl;
     existing.sortOrder = payload.sortOrder;
     existing.isActive = payload.isActive;
+    if (existing.isArchived) {
+      existing.isArchived = false;
+      existing.archivedAt = null;
+      existing.archivedBy = "";
+      existing.archiveReason = "";
+    }
     existing.serviceAssignments = payload.serviceAssignments;
     existing.compensation = payload.compensation;
     await existing.save();
@@ -216,14 +236,22 @@ router.delete("/admin/:id", authRequired, adminOrStaffManagerOnly, async (req, r
 
     const history = await getHistoryCounts(staff);
     if (history.total > 0) {
-      return res.status(409).json({
-        message:
-          "This staff member already has appointment, attendance, or payroll history. Set the profile to inactive instead of deleting it so past records stay correct."
+      staff.isActive = false;
+      staff.isArchived = true;
+      staff.archivedAt = new Date();
+      staff.archivedBy = String(req.user?.email || req.user?.uid || "admin").trim();
+      staff.archiveReason = String(req.body?.reason || req.query?.reason || "Archived from staff management").trim();
+      await staff.save();
+      return res.json({
+        ok: true,
+        archived: true,
+        message: "This staff member had linked booking/payroll history, so the profile was archived and hidden instead of being hard-deleted.",
+        staff: serializeStaff(staff)
       });
     }
 
     await Staff.findByIdAndDelete(req.params.id);
-    res.json({ ok: true });
+    res.json({ ok: true, deleted: true });
   } catch (e) {
     next(e);
   }

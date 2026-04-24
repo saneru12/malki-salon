@@ -21,7 +21,7 @@ const ORDER_STATUSES = [
   "cancelled"
 ];
 const ISSUE_STATUSES = ["none", "open", "replied", "resolved"];
-const CUSTOMER_CAN_CANCEL = ["pending", "confirmed"];
+const CUSTOMER_CAN_CANCEL = ["pending"];
 const ADMIN_CAN_CANCEL = ["pending", "confirmed"];
 const CUSTOMER_CAN_CONFIRM_DELIVERY = ["shipped", "out_for_delivery", "delivered", "delivery_issue"];
 
@@ -524,7 +524,7 @@ router.put("/me/:id/cancel-items", authRequired, customerOnly, async (req, res, 
     ensureOrderShape(o);
 
     if (!CUSTOMER_CAN_CANCEL.includes(o.status)) {
-      return res.status(409).json({ message: "Selected items can be cancelled only before courier handover." });
+      return res.status(409).json({ message: "Selected items can be cancelled only before the salon approves the order." });
     }
 
     const note = normalizeText(req.body?.note, 1500);
@@ -548,13 +548,13 @@ router.put("/me/:id/cancel", authRequired, customerOnly, async (req, res, next) 
     ensureOrderShape(o);
 
     if (!CUSTOMER_CAN_CANCEL.includes(o.status)) {
-      return res.status(409).json({ message: "This order cannot be cancelled." });
+      return res.status(409).json({ message: "This order can be cancelled only before the salon approves it." });
     }
 
-    const result = await cancelAllRemainingItems(o, { by: "customer", note: "Customer cancelled before courier handover." });
+    const result = await cancelAllRemainingItems(o, { by: "customer", note: "Customer cancelled before salon approval." });
     await o.save();
 
-    await createOrderMessage(o, "customer", buildCustomerCancellationMessage(result, "Customer cancelled before courier handover."));
+    await createOrderMessage(o, "customer", buildCustomerCancellationMessage(result, "Customer cancelled before salon approval."));
 
     ensureOrderShape(o);
     return res.json({ ok: true, order: o });
